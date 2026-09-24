@@ -80,6 +80,20 @@ multi-arch buildx.
   personal ops skills that live outside any shared repo.
 - **Dates are absolute** ("since v5.2, 2026-03"), never "recently" or "new".
 
+## Library budget
+
+Every listed skill's description costs context on every turn. Once the listing is too big (many
+personal skills plus large plugins), Claude Code shows some skills **by name only**, and a name
+alone rarely triggers auto-invocation. So:
+
+- Fewer, sharper skills beat many overlapping ones. Merge near-duplicates.
+- User-only workflows (deploys, ops runbooks you call by name) get
+  `disable-model-invocation: true`, which drops them from the listing entirely.
+- Rarely used skills can be demoted without deleting them, through `skillOverrides` in settings.json
+  (`"name-only"`, `"user-invocable-only"`, `"off"`).
+- Disable plugins whose skills you never use.
+- Measure with `/skill-doctor`, which shows each skill's cost and how often it's used.
+
 ## Skill vs. something else
 
 | The knowledge is… | Put it in |
