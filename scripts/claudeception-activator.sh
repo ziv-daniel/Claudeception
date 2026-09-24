@@ -5,9 +5,8 @@
 # for extractable knowledge worth preserving.
 #
 # Installation:
-#   1. Copy this script to ~/.claude/hooks/
-#   2. Make it executable: chmod +x ~/.claude/hooks/claudeception-activator.sh
-#   3. Add to ~/.claude/settings.json (see README for details)
+#   Point a UserPromptSubmit hook at this file (see README):
+#   "command": "bash ~/.claude/skills/claudeception/scripts/claudeception-activator.sh"
 
 cat << 'EOF'
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -30,6 +29,10 @@ EVALUATION PROTOCOL (NON-NEGOTIABLE):
 
 4. IF NO to all questions:
    SKIP: No skill extraction needed
+
+5. ALSO: if a skill you loaded this turn was wrong, outdated, or missing a
+   step (or should have triggered but didn't), fix that skill after the task
+   (Claudeception fix-on-use: correct it, bump metadata.version, tell the user).
 
 This is NOT optional. Failing to evaluate means valuable knowledge is lost.
 The claudeception skill will decide whether to actually create a new

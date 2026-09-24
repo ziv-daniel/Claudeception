@@ -1,389 +1,136 @@
 ---
 name: claudeception
-description: |
-  Claudeception is a continuous learning system that extracts reusable knowledge from work sessions.
-  Triggers: (1) /claudeception command to review session learnings, (2) "save this as a skill"
-  or "extract a skill from this", (3) "what did we learn?", (4) After any task involving
-  non-obvious debugging, workarounds, or trial-and-error discovery. Creates new Claude Code
-  skills when valuable, reusable knowledge is identified.
-author: Claude Code
-version: 3.0.0
-allowed-tools:
-  - Read
-  - Write
-  - Edit
-  - Grep
-  - Glob
-  - WebSearch
-  - WebFetch
-  - Skill
-  - AskUserQuestion
-  - TodoWrite
+description: >-
+  Continuous learning for skills and agents: extracts new skills from work sessions and refines
+  existing ones (refresh stale facts, fix undiscoverable descriptions, simplify, merge
+  duplicates, reclassify skill vs agent vs rule). Use when: (1) /claudeception, /claudeception
+  refine, or /claudeception audit, (2) "save this as a skill", "what did we learn?", "improve,
+  update, clean up or audit my skills/agents", (3) after a task needing non-obvious debugging,
+  workarounds, or trial-and-error, (4) a skill you just used turned out wrong, outdated, or
+  failed to trigger.
+argument-hint: "[extract | refine [name...|--stale] | audit]"
+metadata:
+  author: blader, extended by ziv-daniel
+  version: "4.0.0"
+  last_verified: "2026-09-24"
 ---
 
 # Claudeception
 
-You are Claudeception: a continuous learning system that extracts reusable knowledge from work sessions and 
-codifies it into new Claude Code skills. This enables autonomous improvement over time.
+A continuous learning loop for a skill library, with three modes:
 
-## Core Principle: Skill Extraction
+| Mode | Trigger | Does |
+|---|---|---|
+| **Extract** | `/claudeception`, end of session, non-obvious discovery | Turns new knowledge into a skill, or into an update of an existing one |
+| **Refine** | `/claudeception refine [names or --stale]`, "improve/clean up my skills/agents" | Audits and improves existing skills and agents |
+| **Fix-on-use** | A skill you just used was wrong, stale, or didn't trigger | Corrects that skill right away |
 
-When working on tasks, continuously evaluate whether the current work contains extractable 
-knowledge worth preserving. Not every task produces a skill—be selective about what's truly 
-reusable and valuable.
+`/claudeception audit` runs only the read-only report from Refine step 1.
 
-## When to Extract a Skill
+All modes write to the same standard: **[references/skill-standard.md](references/skill-standard.md)**
+(frontmatter, descriptions, size, skill vs agent vs rule) and
+**[references/agent-standard.md](references/agent-standard.md)** for subagents. Read the relevant one
+before writing.
 
-Extract a skill when you encounter:
+Skill roots, project first: `.claude/skills/`, `~/.claude/skills/`, `~/.agents/skills/`, `~/.codex/skills/`.
+Agent roots: `.claude/agents/`, `~/.claude/agents/`. Treat plugin (`~/.claude/plugins/`) and `synced/` content as read-only.
 
-1. **Non-obvious Solutions**: Debugging techniques, workarounds, or solutions that required 
-   significant investigation and wouldn't be immediately apparent to someone facing the same 
-   problem.
-
-2. **Project-Specific Patterns**: Conventions, configurations, or architectural decisions 
-   specific to this codebase that aren't documented elsewhere.
-
-3. **Tool Integration Knowledge**: How to properly use a specific tool, library, or API in 
-   ways that documentation doesn't cover well.
-
-4. **Error Resolution**: Specific error messages and their actual root causes/fixes, 
-   especially when the error message is misleading.
-
-5. **Workflow Optimizations**: Multi-step processes that can be streamlined or patterns 
-   that make common tasks more efficient.
-
-## Skill Quality Criteria
-
-Before extracting, verify the knowledge meets these criteria:
-
-- **Reusable**: Will this help with future tasks? (Not just this one instance)
-- **Non-trivial**: Is this knowledge that requires discovery, not just documentation lookup?
-- **Specific**: Can you describe the exact trigger conditions and solution?
-- **Verified**: Has this solution actually worked, not just theoretically?
-
-## Extraction Process
-
-### Step 1: Check for Existing Skills
-
-**Goal:** Find related skills before creating. Decide: update or create new.
-
-```sh
-# Skill directories (project-first, then user-level)
-SKILL_DIRS=(
-  ".claude/skills"
-  "$HOME/.claude/skills"
-  "$HOME/.codex/skills"
-  # Add other tool paths as needed
-)
-
-# List all skills
-rg --files -g 'SKILL.md' "${SKILL_DIRS[@]}" 2>/dev/null
-
-# Search by keywords
-rg -i "keyword1|keyword2" "${SKILL_DIRS[@]}" 2>/dev/null
-
-# Search by exact error message
-rg -F "exact error message" "${SKILL_DIRS[@]}" 2>/dev/null
-
-# Search by context markers (files, functions, config keys)
-rg -i "getServerSideProps|next.config.js|prisma.schema" "${SKILL_DIRS[@]}" 2>/dev/null
-```
-
-| Found                                            | Action                                                   |
-|--------------------------------------------------|----------------------------------------------------------|
-| Nothing related                                  | Create new                                               |
-| Same trigger and same fix                        | Update existing (e.g., `version: 1.0.0` → `1.1.0`)       |
-| Same trigger, different root cause               | Create new, add `See also:` links both ways              |
-| Partial overlap (same domain, different trigger) | Update existing with new "Variant" subsection            |
-| Same domain, different problem                   | Create new, add `See also: [skill-name]` in Notes        |
-| Stale or wrong                                   | Mark deprecated in Notes, add replacement link           |
-
-**Versioning:** patch = typos/wording, minor = new scenario, major = breaking changes or deprecation.
-
-If multiple matches, open the closest one and compare Problem/Trigger Conditions before deciding.
-
-### Step 2: Identify the Knowledge
-
-Analyze what was learned:
-- What was the problem or task?
-- What was non-obvious about the solution?
-- What would someone need to know to solve this faster next time?
-- What are the exact trigger conditions (error messages, symptoms, contexts)?
-
-### Step 3: Research Best Practices (When Appropriate)
-
-Before creating the skill, search the web for current information when:
-
-**Always search for:**
-- Technology-specific best practices (frameworks, libraries, tools)
-- Current documentation or API changes
-- Common patterns or solutions for similar problems
-- Known gotchas or pitfalls in the problem domain
-- Alternative approaches or solutions
-
-**When to search:**
-- The topic involves specific technologies, frameworks, or tools
-- You're uncertain about current best practices
-- The solution might have changed after January 2025 (knowledge cutoff)
-- There might be official documentation or community standards
-- You want to verify your understanding is current
-
-**When to skip searching:**
-- Project-specific internal patterns unique to this codebase
-- Solutions that are clearly context-specific and wouldn't be documented
-- Generic programming concepts that are stable and well-understood
-- Time-sensitive situations where the skill needs to be created immediately
-
-**Search strategy:**
-```
-1. Search for official documentation: "[technology] [feature] official docs 2026"
-2. Search for best practices: "[technology] [problem] best practices 2026"
-3. Search for common issues: "[technology] [error message] solution 2026"
-4. Review top results and incorporate relevant information
-5. Always cite sources in a "References" section of the skill
-```
-
-**Example searches:**
-- "Next.js getServerSideProps error handling best practices 2026"
-- "Claude Code skill description semantic matching 2026"
-- "React useEffect cleanup patterns official docs 2026"
-
-**Integration with skill content:**
-- Add a "References" section at the end of the skill with source URLs
-- Incorporate best practices into the "Solution" section
-- Include warnings about deprecated patterns in the "Notes" section
-- Mention official recommendations where applicable
-
-### Step 4: Structure the Skill
-
-Create a new skill with this structure:
-
-```markdown
----
-name: [descriptive-kebab-case-name]
-description: |
-  [Precise description including: (1) exact use cases, (2) trigger conditions like 
-  specific error messages or symptoms, (3) what problem this solves. Be specific 
-  enough that semantic matching will surface this skill when relevant.]
-author: [original-author or "Claude Code"]
-version: 1.0.0
-date: [YYYY-MM-DD]
 ---
 
-# [Skill Name]
+## Extract mode
 
-## Problem
-[Clear description of the problem this skill addresses]
+### When it's worth it
 
-## Context / Trigger Conditions  
-[When should this skill be used? Include exact error messages, symptoms, or scenarios]
+Extract only knowledge that is:
+- **Reusable**: it will help future tasks, not just this one.
+- **Non-trivial**: it took discovery; a docs lookup or general knowledge wouldn't have been enough.
+- **Specific**: you can state the exact trigger (error text, symptom, context) and the fix.
+- **Verified**: it actually worked in this session.
 
-## Solution
-[Step-by-step solution or knowledge to apply]
+Typical sources: a misleading error and its real root cause, a workaround for a tool
+limitation, an undocumented config or project convention, or a multi-step process that could
+be streamlined.
 
-## Verification
-[How to verify the solution worked]
+Skip: mundane fixes, anything the model already knows, copies of official docs, and anything
+unverified.
 
-## Example
-[Concrete example of applying this skill]
+### Steps
 
-## Notes
-[Any caveats, edge cases, or related considerations]
+1. **Search existing skills and agents first.** Most learnings belong in an existing skill.
+   ```bash
+   python3 ${CLAUDE_SKILL_DIR}/scripts/audit.py --json | python3 -c "import json,sys; [print(i['name'],'—',i.get('description','')[:120]) for i in json.load(sys.stdin)['items']]"
+   rg -il "exact error text|tool name|config key" ~/.claude/skills .claude/skills 2>/dev/null
+   ```
+   | Found | Action |
+   |---|---|
+   | Nothing related | Create new |
+   | Same trigger and same fix | Update the existing skill (minor version bump) |
+   | Same trigger, different root cause | Create new, and add `See also:` links in both directions |
+   | Same domain, different trigger | Add a "Variant" section to the existing skill |
+   | Existing skill is stale or wrong | Fix it (Refine rules), don't duplicate it |
+2. **Decide the form.** Use the "Skill vs. something else" table in the standard. A one-line rule
+   belongs in CLAUDE.md, a deterministic trigger belongs in a hook, and self-contained verbose
+   work belongs in an agent. Propose non-skill forms to the user instead of writing a skill.
+3. **Research when it's tech-specific.** Check current docs (Context7 or official docs; web search
+   for errors) for anything version-dependent. Cite sources in `## References`. Skip this for
+   project-internal knowledge.
+4. **Write it** from [references/skill-template.md](references/skill-template.md), following the
+   standard. The description matters most: lead with the use case, then "Use when: (1)…" with
+   exact error strings, then the key tools and versions. Keep it ≤1024 chars and use a `>-` block scalar.
+5. **Save it** to `.claude/skills/<name>/SKILL.md` if it's project-specific, otherwise to
+   `~/.claude/skills/<name>/SKILL.md`. Put helpers in `scripts/` and long reference material in `references/`.
+6. **Validate** with `python3 ${CLAUDE_SKILL_DIR}/scripts/audit.py --only <name>`. Fix every error and warn it reports.
+   Commit the change if the root is a git repo.
 
-## References
-[Optional: Links to official documentation, articles, or resources that informed this skill]
-```
+### Retrospective (`/claudeception` at the end of a session)
 
-### Step 5: Write Effective Descriptions
+Review the session. List the candidates with a one-line justification each, and include
+**updates to existing skills** as candidates (skills that were used and needed correcting).
+Do the top 1–3, then report what was created or updated and why.
 
-The description field is critical for skill discovery. Include:
-
-- **Specific symptoms**: Exact error messages, unexpected behaviors
-- **Context markers**: Framework names, file types, tool names
-- **Action phrases**: "Use when...", "Helps with...", "Solves..."
-
-Example of a good description:
-```
-description: |
-  Fix for "ENOENT: no such file or directory" errors when running npm scripts 
-  in monorepos. Use when: (1) npm run fails with ENOENT in a workspace, 
-  (2) paths work in root but not in packages, (3) symlinked dependencies 
-  cause resolution failures. Covers node_modules resolution in Lerna, 
-  Turborepo, and npm workspaces.
-```
-
-### Step 6: Save the Skill
-
-Save new skills to the appropriate location:
-
-- **Project-specific skills**: `.claude/skills/[skill-name]/SKILL.md`
-- **User-wide skills**: `~/.claude/skills/[skill-name]/SKILL.md`
-
-Include any supporting scripts in a `scripts/` subdirectory if the skill benefits from 
-executable helpers.
-
-## Retrospective Mode
-
-When `/claudeception` is invoked at the end of a session:
-
-1. **Review the Session**: Analyze the conversation history for extractable knowledge
-2. **Identify Candidates**: List potential skills with brief justifications
-3. **Prioritize**: Focus on the highest-value, most reusable knowledge
-4. **Extract**: Create skills for the top candidates (typically 1-3 per session)
-5. **Summarize**: Report what skills were created and why
-
-## Self-Reflection Prompts
-
-Use these prompts during work to identify extraction opportunities:
-
-- "What did I just learn that wasn't obvious before starting?"
-- "If I faced this exact problem again, what would I wish I knew?"
-- "What error message or symptom led me here, and what was the actual cause?"
-- "Is this pattern specific to this project, or would it help in similar projects?"
-- "What would I tell a colleague who hits this same issue?"
-
-## Memory Consolidation
-
-When extracting skills, also consider:
-
-1. **Combining Related Knowledge**: If multiple related discoveries were made, consider 
-   whether they belong in one comprehensive skill or separate focused skills.
-
-2. **Updating Existing Skills**: Check if an existing skill should be updated rather than 
-   creating a new one.
-
-3. **Cross-Referencing**: Note relationships between skills in their documentation.
-
-## Quality Gates
-
-Before finalizing a skill, verify:
-
-- [ ] Description contains specific trigger conditions
-- [ ] Solution has been verified to work
-- [ ] Content is specific enough to be actionable
-- [ ] Content is general enough to be reusable
-- [ ] No sensitive information (credentials, internal URLs) is included
-- [ ] Skill doesn't duplicate existing documentation or skills
-- [ ] Web research conducted when appropriate (for technology-specific topics)
-- [ ] References section included if web sources were consulted
-- [ ] Current best practices (post-2025) incorporated when relevant
-
-## Anti-Patterns to Avoid
-
-- **Over-extraction**: Not every task deserves a skill. Mundane solutions don't need preservation.
-- **Vague descriptions**: "Helps with React problems" won't surface when needed.
-- **Unverified solutions**: Only extract what actually worked.
-- **Documentation duplication**: Don't recreate official docs; link to them and add what's missing.
-- **Stale knowledge**: Mark skills with versions and dates; knowledge can become outdated.
-
-## Skill Lifecycle
-
-Skills should evolve:
-
-1. **Creation**: Initial extraction with documented verification
-2. **Refinement**: Update based on additional use cases or edge cases discovered
-3. **Deprecation**: Mark as deprecated when underlying tools/patterns change
-4. **Archival**: Remove or archive skills that are no longer relevant
-
-## Example: Complete Extraction Flow
-
-**Scenario**: While debugging a Next.js app, you discover that `getServerSideProps` errors
-aren't showing in the browser console because they're server-side, and the actual error is
-in the terminal.
-
-**Step 1 - Identify the Knowledge**:
-- Problem: Server-side errors don't appear in browser console
-- Non-obvious aspect: Expected behavior for server-side code in Next.js
-- Trigger: Generic error page with empty browser console
-
-**Step 2 - Research Best Practices**:
-Search: "Next.js getServerSideProps error handling best practices 2026"
-- Found official docs on error handling
-- Discovered recommended patterns for try-catch in data fetching
-- Learned about error boundaries for server components
-
-**Step 3-5 - Structure and Save**:
-
-**Extraction**:
-
-```markdown
----
-name: nextjs-server-side-error-debugging
-description: |
-  Debug getServerSideProps and getStaticProps errors in Next.js. Use when: 
-  (1) Page shows generic error but browser console is empty, (2) API routes 
-  return 500 with no details, (3) Server-side code fails silently. Check 
-  terminal/server logs instead of browser for actual error messages.
-author: Claude Code
-version: 1.0.0
-date: 2024-01-15
 ---
 
-# Next.js Server-Side Error Debugging
+## Refine mode
 
-## Problem
-Server-side errors in Next.js don't appear in the browser console, making 
-debugging frustrating when you're looking in the wrong place.
+Follow **[references/refine-playbook.md](references/refine-playbook.md)**. In short:
 
-## Context / Trigger Conditions
-- Page displays "Internal Server Error" or custom error page
-- Browser console shows no errors
-- Using getServerSideProps, getStaticProps, or API routes
-- Error only occurs on navigation/refresh, not on client-side transitions
+0. **Safety.** The root must be a git repo (offer `git init` + a baseline commit if it isn't). Strip `GIT_*` env vars.
+   Plugin and synced content is report-only.
+1. **Inventory.** Run `python3 ${CLAUDE_SKILL_DIR}/scripts/audit.py [--only names]`. It's read-only.
+2. **Triage** each flagged item after reading it in full, with one verdict each: `fix-header`, `refresh`,
+   `simplify`, `merge`, `split`, `reclassify` (skill ↔ agent ↔ rule ↔ hook ↔ memory), `deprecate` or `ok`.
+3. **Report first.** Show a table of item, verdict, evidence and planned change. Structural changes
+   (merge, split, reclassify, deprecate, body rewrites) need the user's approval.
+4. **Apply** one commit per item. Bump `metadata.version`. Set `last_verified` only if you checked the facts.
+   Re-run the audit on that item.
+5. **Summarize** the changes (with commits), what was deferred, and any manual follow-ups (e.g. rotate a leaked credential).
 
-## Solution
-1. Check the terminal where `npm run dev` is running—errors appear there
-2. For production, check server logs (Vercel dashboard, CloudWatch, etc.)
-3. Add try-catch with console.error in server-side functions for clarity
-4. Use Next.js error handling: return `{ notFound: true }` or `{ redirect: {...} }` 
-   instead of throwing
+Principles:
+- **Discoverability first.** A skill with a broken or vague description is invisible. Fix those before anything else.
+- **Refresh from evidence, not memory.** Your training data is older than current docs, so verify
+  version-dependent claims. Mark anything unverifiable in `Notes` instead of guessing.
+- **Simplify.** Cut generic advice the model already knows, keep the exact specifics (error
+  strings, flags, paths), and move bulk to `references/`.
+- **Model-agnostic.** No model-specific quirks and no retired model IDs.
 
-## Verification
-After checking terminal, you should see the actual stack trace with file 
-and line numbers.
+---
 
-## Notes
-- This applies to all server-side code in Next.js, not just data fetching
-- In development, Next.js sometimes shows a modal with partial error info
-- The `next.config.js` option `reactStrictMode` can cause double-execution
-  that makes debugging confusing
+## Fix-on-use
 
-## References
-- [Next.js Data Fetching: getServerSideProps](https://nextjs.org/docs/pages/building-your-application/data-fetching/get-server-side-props)
-- [Next.js Error Handling](https://nextjs.org/docs/pages/building-your-application/routing/error-handling)
-```
+When a skill you loaded during the task turns out wrong, outdated, incomplete, or didn't
+trigger when it should have, fix it right after the task. Correct the step and add the evidence,
+add the missed trigger phrasing to the description, bump the minor version, set `last_verified`,
+and tell the user in one line. See the end of the playbook.
 
-## Integration with Workflow
+---
 
-### Automatic Trigger Conditions
+## Quality gates (every write)
 
-Invoke this skill immediately after completing a task when ANY of these apply:
-
-1. **Non-obvious debugging**: The solution required >10 minutes of investigation and
-   wasn't found in documentation
-2. **Error resolution**: Fixed an error where the error message was misleading or the
-   root cause wasn't obvious
-3. **Workaround discovery**: Found a workaround for a tool/framework limitation that
-   required experimentation
-4. **Configuration insight**: Discovered project-specific setup that differs from
-   standard patterns
-5. **Trial-and-error success**: Tried multiple approaches before finding what worked
-
-### Explicit Invocation
-
-Also invoke when:
-- User runs `/claudeception` to review the session
-- User says "save this as a skill" or similar
-- User asks "what did we learn?"
-
-### Self-Check After Each Task
-
-After completing any significant task, ask yourself:
-- "Did I just spend meaningful time investigating something?"
-- "Would future-me benefit from having this documented?"
-- "Was the solution non-obvious from documentation alone?"
-
-If yes to any, invoke this skill immediately.
-
-Remember: The goal is continuous, autonomous improvement. Every valuable discovery
-should have the opportunity to benefit future work sessions.
+- [ ] Frontmatter parses. `name` matches the directory. Only spec keys plus behavior-changing Claude Code keys are used.
+- [ ] The description leads with the use case, has "Use when" triggers with exact symptoms, and is ≤1024 chars.
+- [ ] The body is procedural, under 500 lines (ideally under 200), and details live in `references/`.
+- [ ] The solution was verified. Web sources are cited in `## References`.
+- [ ] No secrets, tokens, or personal data (use `<PLACEHOLDER>`).
+- [ ] It doesn't duplicate an existing skill; cross-links are added both ways.
+- [ ] `metadata.version` is bumped. `last_verified` is set only when the content was checked.
+- [ ] `audit.py --only <name>` is clean.

@@ -111,6 +111,32 @@ Or explicitly request skill extraction:
 Save what we just learned as a skill
 ```
 
+### Refine Mode (improve existing skills and agents)
+
+```
+/claudeception audit                 # read-only report of every skill and agent
+/claudeception refine                # triage + improve, with approval before structural changes
+/claudeception refine foo bar        # just these
+/claudeception refine --stale        # only stale/undated ones
+```
+
+Refine checks each skill and agent against [references/skill-standard.md](references/skill-standard.md)
+and [references/agent-standard.md](references/agent-standard.md). It gives each one a verdict:
+`fix-header`, `refresh` (re-verify facts against current docs), `simplify`, `merge`, `split`,
+`reclassify` (skill ↔ agent ↔ CLAUDE.md rule ↔ hook ↔ memory), `deprecate` or `ok`. It then
+applies one git commit per item. See [references/refine-playbook.md](references/refine-playbook.md).
+
+The auditor runs on its own too:
+
+```bash
+python3 ~/.claude/skills/claudeception/scripts/audit.py [--only NAME...] [--json]
+```
+
+### Fix-on-use
+
+If a skill Claude loaded turns out wrong, outdated, or failed to trigger, Claude corrects that
+skill right after the task. The activation hook reminds it to.
+
 ### What Gets Extracted
 
 Not every task produces a skill. It only extracts knowledge that required actual discovery (not just reading docs), will help with future tasks, has clear trigger conditions, and has been verified to work.
@@ -140,13 +166,15 @@ Extracted skills are markdown files with YAML frontmatter:
 ```yaml
 ---
 name: prisma-connection-pool-exhaustion
-description: |
-  Fix for PrismaClientKnownRequestError: Too many database connections 
-  in serverless environments (Vercel, AWS Lambda). Use when connection 
+description: >-
+  Fix for PrismaClientKnownRequestError: Too many database connections
+  in serverless environments (Vercel, AWS Lambda). Use when connection
   count errors appear after ~5 concurrent requests.
-author: Claude Code
-version: 1.0.0
-date: 2024-01-15
+metadata:
+  author: Claude Code
+  version: "1.0.0"
+  created: "2024-01-15"
+  last_verified: "2024-01-15"
 ---
 
 # Prisma Connection Pool Exhaustion

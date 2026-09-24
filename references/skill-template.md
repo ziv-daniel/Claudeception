@@ -1,14 +1,15 @@
 ---
-name: [descriptive-kebab-case-name]
-description: |
-  [REQUIRED: Precise description that enables semantic matching. Include:
-  (1) What problem this solves
-  (2) Specific trigger conditions - exact error messages, symptoms, scenarios
-  (3) Key technologies/frameworks involved
-  Use phrases like "Use when:", "Helps with:", "Solves:"]
-author: Claude Code
-version: 1.0.0
-date: YYYY-MM-DD
+name: [descriptive-kebab-case-name]   # must equal the directory name
+description: >-
+  [One sentence: what this fixes/does.] Use when: (1) [exact error message or symptom],
+  (2) [context: tool/framework + version], (3) [other trigger]. [Key terms a user would type.]
+  [Optional: Not for X, see other-skill.] Max 1024 chars; lead with the key use case.
+metadata:
+  author: claudeception
+  version: "1.0.0"
+  created: "YYYY-MM-DD"
+  last_verified: "YYYY-MM-DD"
+  status: active
 ---
 
 # [Skill Name - Human Readable Title]
@@ -92,4 +93,6 @@ Extraction Checklist (remove before saving):
 - [ ] Example is concrete and realistic
 - [ ] Notes cover edge cases and caveats
 - [ ] No sensitive information (credentials, internal URLs)
+- [ ] Body under 500 lines; long reference material moved to references/
+- [ ] audit.py --only <name> is clean
 -->
