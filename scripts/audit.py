@@ -146,6 +146,8 @@ def audit_skill(skill_dir, stale_days):
     if str(meta.get("status", "")).lower() == "deprecated":
         r["hints"].append("deprecated: archive candidate")
 
+    if re.search(r"(^|[\s`(~])\.Codex/|Codex-agent-sdk|name: Codex-", body + str(fm.get("name", ""))):
+        r["issues"].append(("warn", "migration-corruption", "'.Codex/' path or Codex-substituted name; likely a bad Claude->Codex rewrite"))
     if OLD_MODEL_RE.search(body):
         r["issues"].append(("warn", "old-model-id", f"mentions retired model id '{OLD_MODEL_RE.search(body).group(0)}'"))
     secrets = [m.group(0) for m in SECRET_RE.finditer(body) if not PLACEHOLDER_SECRET_RE.search(m.group(0))]
