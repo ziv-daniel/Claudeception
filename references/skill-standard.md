@@ -84,7 +84,10 @@ multi-arch buildx.
 
 Every listed skill's description costs context on every turn. Once the listing is too big (many
 personal skills plus large plugins), Claude Code shows some skills **by name only**, and a name
-alone rarely triggers auto-invocation. So:
+alone rarely triggers auto-invocation. Observed on Claude Code 2.1.263–2.1.280 (2026-09): the
+listing tops out at ~30K characters. With ~135+ skills, only about half kept their descriptions,
+and agents replied "I have no tool for that" while the skill existed. Multi-line `|` descriptions
+also render as fake list entries in the listing, so keep descriptions one flowing paragraph. So:
 
 - Fewer, sharper skills beat many overlapping ones. Merge near-duplicates.
 - User-only workflows (deploys, ops runbooks you call by name) get
