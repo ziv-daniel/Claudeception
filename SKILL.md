@@ -11,7 +11,7 @@ description: >-
 argument-hint: "[extract | refine [name...|--stale] | audit]"
 metadata:
   author: blader, extended by ziv-daniel
-  version: "4.0.0"
+  version: "4.1.0"
   last_verified: "2026-09-24"
 ---
 
@@ -68,7 +68,11 @@ unverified.
    | Same trigger, different root cause | Create new, and add `See also:` links in both directions |
    | Same domain, different trigger | Add a "Variant" section to the existing skill |
    | Existing skill is stale or wrong | Fix it (Refine rules), don't duplicate it |
-2. **Decide the form.** Use the "Skill vs. something else" table in the standard. A one-line rule
+   If the `second-brain` MCP is connected, also run `get_context(task=<error text or topic>)`; the brain may already hold it.
+2. **Decide the form: minimum skill, maximum brain.** Durable facts, gotchas, and error→fix lessons
+   go to the Second Brain (`propose_outcome` with evidence, or `save_fact`) so every agent and CLI
+   gets them. Write or extend a skill only for executable, reusable steps, and keep it thin.
+   Otherwise use the "Skill vs. something else" table in the standard. A one-line rule
    belongs in CLAUDE.md, a deterministic trigger belongs in a hook, and self-contained verbose
    work belongs in an agent. Propose non-skill forms to the user instead of writing a skill.
 3. **Research when it's tech-specific.** Check current docs (Context7 or official docs; web search
@@ -81,6 +85,8 @@ unverified.
    `~/.claude/skills/<name>/SKILL.md`. Put helpers in `scripts/` and long reference material in `references/`.
 6. **Validate** with `python3 ${CLAUDE_SKILL_DIR}/scripts/audit.py --only <name>`. Fix every error and warn it reports.
    Commit the change if the root is a git repo.
+7. **Sync the brain.** After writing or updating a skill, store its durable knowledge in the Second Brain
+   (search first, `source=<skill path>`, the literal error string in the body). The `skill-to-brain` hook reminds you.
 
 ### Retrospective (`/claudeception` at the end of a session)
 
